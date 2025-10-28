@@ -7,7 +7,7 @@ from bot.config import Config
 from bot.api_client import APIClient
 from bot.middlewares.auth_middleware import AuthMiddleware
 
-from bot.handlers import common, auth, employee_handler, admin_handler
+from bot.handlers import common, auth, employee_handler
 
 # Настройка логирования
 logging.basicConfig(
@@ -37,7 +37,6 @@ async def main():
     # Регистрируем роутеры
     dp.include_router(auth.router)
     dp.include_router(employee_handler.router)
-    dp.include_router(admin_handler.router)
     dp.include_router(common.router)
 
     # Добавляем api_client в контекст для всех хендлеров

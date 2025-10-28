@@ -1,8 +1,10 @@
+import os
+
 from aiogram import Router, F
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, FSInputFile
 from datetime import datetime
 from collections import defaultdict
-
+import tempfile
 from bot.keyboards.employee_kb import get_days_off_inline
 
 router = Router()
@@ -89,7 +91,7 @@ async def show_days_off(message: Message, employee: dict = None, api_client=None
         return
 
     # Фильтруем только выходные (предполагаем что actiontype_id = 2 это выходной)
-    days_off = [a for a in actions if "выходной" in a["action_type_name"].lower() or a["actiontype_id"] == 2]
+    days_off = [a for a in actions if "выходной" in a["action_type_name"].lower() or a["actiontype_id"] == 1]
 
     if not days_off:
         await message.answer("📅 У вас пока нет оформленных выходных дней.")
@@ -104,15 +106,22 @@ async def show_days_off(message: Message, employee: dict = None, api_client=None
 
 
 @router.callback_query(F.data.startswith("document_"))
-async def request_document(callback: CallbackQuery):
-    """Запрос справки о выходном дне"""
-    action_id = callback.data.split("_")[1]
-
+async def request_document(callback: CallbackQuery, api_client):
+    action_id = int(callback.data.split("_")[1])
     await callback.answer("📄 Формирование справки...")
 
-    # TODO: Здесь будет генерация документа
-    await callback.message.answer(
-        f"📄 Справка для действия #{action_id}\n\n"
-        f"⚠️ Функция генерации документа находится в разработке.\n"
-        f"Справка будет отправлена на вашу почту."
-    )
+    file_bytes = await api_client.get_holiday_document_by_action(action_id)
+    if not file_bytes:
+        await callback.message.answer("❌ Ошибка при получении документа.")
+        return
+
+    with tempfile.NamedTemporaryFile(suffix='.doc', delete=False) as tmp:
+        tmp.write(file_bytes)
+        temp_filepath = tmp.name
+
+    try:
+        input_doc = FSInputFile(temp_filepath, filename=f"holiday_document_{action_id}.doc")
+        await callback.message.answer_document(document=input_doc)
+    finally:
+        if os.path.exists(temp_filepath):
+            os.unlink(temp_filepath)

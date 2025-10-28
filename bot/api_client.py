@@ -40,14 +40,14 @@ class APIClient:
     # === Авторизация ===
     async def login(self, login: str, password: str) -> Optional[Dict]:
         """Авторизация по логину и паролю"""
-        return await self._request("POST", "/auth/login", json={
+        return await self._request("POST", "/employees/login", json={
             "login": login,
             "password": password
         })
 
     async def link_telegram(self, employee_id: int, tg_id: int) -> bool:
         """Привязка Telegram ID к сотруднику"""
-        result = await self._request("PUT", f"/employees/{employee_id}/telegram", json={
+        result = await self._request("PUT", f"/employees/{employee_id}/set_tg_id", json={
             "tg_id": tg_id
         })
         return result is not None
@@ -85,3 +85,24 @@ class APIClient:
             "date_action": date,
             "actiontype_id": actiontype_id
         })
+
+    async def get_holiday_document_by_action(self, action_id: int) -> Optional[bytes]:
+        """Получить файл справки по id действия"""
+        return await self._request_binary("POST", f"/documents/holiday/{action_id}")
+
+    async def _request_binary(self, method: str, endpoint: str) -> Optional[bytes]:
+        """Запрос для получения бинарных данных (файла)"""
+        url = f"{self.base_url}{endpoint}"
+        print(url)
+        try:
+            async with self.session.request(method, url) as response:
+                if response.status == 200:
+                    return await response.read()
+                elif response.status == 404:
+                    return None
+                else:
+                    logger.error(f"API Error: {response.status} - {await response.text()}")
+                    return None
+        except Exception as e:
+            logger.error(f"Request error: {e}")
+            return None

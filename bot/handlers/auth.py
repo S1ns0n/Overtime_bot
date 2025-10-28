@@ -6,7 +6,7 @@ from aiogram.fsm.state import default_state
 
 from bot.states.forms import AuthForm
 from bot.keyboards.employee_kb import get_employee_menu, get_profile_menu
-from bot.keyboards.admin_kb import get_admin_menu
+
 
 router = Router()
 
@@ -17,12 +17,11 @@ async def cmd_start(message: Message, state: FSMContext, employee: dict = None, 
     if employee:
         # Пользователь уже авторизован
         role_name = "Администратор" if employee["role_id"] == 1 else "Сотрудник"
-        keyboard = get_admin_menu() if employee["role_id"] == 1 else get_employee_menu()
 
         await message.answer(
             f"👋 С возвращением, {employee['name']} {employee['patronymic']}!\n"
             f"Роль: {role_name}",
-            reply_markup=keyboard
+            reply_markup=get_employee_menu()
         )
     else:
         # Запрашиваем авторизацию
@@ -52,7 +51,7 @@ async def process_password(message: Message, state: FSMContext, api_client):
 
     # Удаляем сообщение с паролем для безопасности
     await message.delete()
-
+    print(f"ЛОГИН И ПАРЛ: {login}, {password}")
     # Пытаемся авторизоваться
     employee = await api_client.login(login, password)
 
@@ -74,7 +73,7 @@ async def process_password(message: Message, state: FSMContext, api_client):
 
     # Успешная авторизация
     role_name = "Администратор" if employee["role_id"] == 1 else "Сотрудник"
-    keyboard = get_admin_menu() if employee["role_id"] == 1 else get_employee_menu()
+
 
     await message.answer(
         f"✅ Авторизация успешна!\n\n"
@@ -82,7 +81,7 @@ async def process_password(message: Message, state: FSMContext, api_client):
         f"📋 Должность: {employee.get('post', {}).get('name_post', 'Не указана')}\n"
         f"🏢 Отдел: {employee.get('otdel', {}).get('name_otdel', 'Не указан')}\n"
         f"👔 Роль: {role_name}",
-        reply_markup=keyboard
+        reply_markup=get_profile_menu()
     )
 
     await state.clear()
@@ -135,5 +134,4 @@ async def back_to_menu(message: Message, employee: dict = None):
         await message.answer("❌ Вы не авторизованы. Используйте /start")
         return
 
-    keyboard = get_admin_menu() if employee["role_id"] == 1 else get_employee_menu()
-    await message.answer("📋 Главное меню:", reply_markup=keyboard)
+    await message.answer("📋 Главное меню:", reply_markup=get_employee_menu())
