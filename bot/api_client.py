@@ -58,7 +58,7 @@ class APIClient:
 
     async def unlink_telegram(self, employee_id: int) -> bool:
         """Отвязать Telegram ID"""
-        result = await self._request("PUT", f"/employees/{employee_id}/telegram", json={
+        result = await self._request("PUT", f"/employees/{employee_id}/unset_tg_id", json={
             "tg_id": None
         })
         return result is not None

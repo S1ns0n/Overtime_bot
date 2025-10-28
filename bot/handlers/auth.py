@@ -9,7 +9,7 @@ from bot.keyboards.employee_kb import get_employee_menu, get_profile_menu
 
 
 router = Router()
-
+COMMANDS = ["/start","/hel["]
 
 @router.message(CommandStart(), StateFilter(default_state))
 async def cmd_start(message: Message, state: FSMContext, employee: dict = None, api_client=None):
@@ -37,6 +37,9 @@ async def cmd_start(message: Message, state: FSMContext, employee: dict = None, 
 @router.message(AuthForm.login)
 async def process_login(message: Message, state: FSMContext):
     """Обработка ввода логина"""
+    if message.text.strip() in COMMANDS:
+        await message.delete()
+        return
     await state.update_data(login=message.text)
     await message.answer("🔑 Теперь введите пароль:")
     await state.set_state(AuthForm.password)
@@ -45,6 +48,9 @@ async def process_login(message: Message, state: FSMContext):
 @router.message(AuthForm.password)
 async def process_password(message: Message, state: FSMContext, api_client):
     """Обработка ввода пароля и авторизация"""
+    if message.text.strip() in COMMANDS:
+        await message.delete()
+        return
     data = await state.get_data()
     login = data.get("login")
     password = message.text
